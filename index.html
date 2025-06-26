@@ -208,8 +208,8 @@
         <!-- Footer -->
         <footer class="py-12 text-center text-sm">
             <p>Terima kasih atas doa restu Anda.</p>
-            <p class="font-heading text-2xl mt-2">Erika & Agus</p>
-            <p class="mt-4 text-xs opacity-70">&copy; 2025. Dibuat dengan <i class="fas fa-heart"></i>.</p>
+            <p id="footer-names" class="font-heading text-2xl mt-2">Erika & Agus</p>
+            <p class="mt-4 text-xs opacity-70">&copy; 2025. Five <i class="fa fa-smile"></i>.</p>
         </footer>
 
     </main>
@@ -219,7 +219,7 @@
         <button id="music-toggle" class="w-12 h-12 rounded-full accent-bg text-white flex items-center justify-center shadow-lg">
             <i id="music-icon" class="fas fa-play"></i>
         </button>
-        <audio id="background-music" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" loop></audio>
+        <audio id="background-music" loop></audio>
     </div>
 
     <!-- Bottom Navigation -->
@@ -241,7 +241,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, collection, addDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, collection, addDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Firebase Configuration ---
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-wedding-app';
@@ -251,6 +251,7 @@
         
         let db, auth;
         let animationEnabled = true;
+        let countdownInterval;
 
         if (firebaseConfig) {
             try {
@@ -273,98 +274,129 @@
             }
         } else {
             console.warn("Firebase config not found. Using default content.");
+            updateContent({}); // Load with default content
             document.body.style.opacity = '1';
         }
 
-        const configDocRef = doc(db, `artifacts/${appId}/public/data/invitation/config`);
-        const guestbookColRef = collection(db, `artifacts/${appId}/public/data/guestbook`);
+        const configDocRef = db ? doc(db, `artifacts/${appId}/public/data/invitation/config`) : null;
+        const guestbookColRef = db ? collection(db, `artifacts/${appId}/public/data/guestbook`) : null;
 
         // --- DYNAMIC CONTENT & STYLE LOADER ---
-        async function loadInvitationData() {
+        function loadInvitationData() {
+            if (!configDocRef) return;
             onSnapshot(configDocRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    
-                    // Update Styles
-                    const styleEl = document.getElementById('dynamic-styles');
-                    const fontLink = document.createElement('link');
-                    const headingFont = data.display.headingFont || 'Playfair Display';
-                    const bodyFont = data.display.bodyFont || 'Poppins';
-                    fontLink.href = `https://fonts.googleapis.com/css2?family=${headingFont.replace(' ', '+')}:wght@700&family=${bodyFont.replace(' ', '+')}&display=swap`;
-                    fontLink.rel = 'stylesheet';
-                    document.head.appendChild(fontLink);
-                    
-                    styleEl.innerHTML = `
-                        :root {
-                            --font-heading: '${headingFont}', serif;
-                            --font-body: '${bodyFont}', sans-serif;
-                            --color-bg: ${data.display.backgroundColor || '#f8f4e9'};
-                            --color-text: ${data.display.textColor || '#3d3d3d'};
-                            --color-accent: ${data.display.accentColor || '#d4af37'};
-                            --color-card-bg: ${getCardBgColor(data.display.backgroundColor || '#f8f4e9')};
-                        }
-                        body { font-family: var(--font-body); background-color: var(--color-bg); color: var(--color-text); opacity: 0; transition: opacity 1s ease-in-out; padding-bottom: 80px; }
-                        h1, h2, h3, .font-heading { font-family: var(--font-heading); }
-                        .accent-text { color: var(--color-accent); }
-                        .accent-bg { background-color: var(--color-accent); }
-                        .card { background-color: var(--color-card-bg); }
-                        .nav-active i, .nav-active span { color: var(--color-accent) !important; font-weight: 600; }
-                        .bottom-nav a { transition: color 0.3s; }
-                        .bottom-nav a:hover { color: var(--color-accent); }
-                        .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.8s, transform 0.8s; transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-                        .reveal.visible { opacity: 1; transform: translateY(0); }
-                         #lightbox { display: none; background-color: rgba(0,0,0,0.9); }
-                         #lightbox-img { animation: zoomInModal 0.5s; }
-                         @keyframes zoomInModal { from {transform: scale(0.8)} to {transform: scale(1)} }
-                    `;
-                    animationEnabled = data.display.animationEnabled === 'true';
-
-                    // Update Content
-                    document.getElementById('splash-groom-name').innerText = data.groom.name.split(',')[0];
-                    document.getElementById('splash-bride-name').innerText = `& ${data.bride.name.split(',')[0]}`;
-                    document.getElementById('splash-date').innerText = data.akad.date;
-                    document.getElementById('hero-names').innerText = `${data.groom.name.split(',')[0]} & ${data.bride.name.split(',')[0]}`;
-                    document.getElementById('hero-date').innerText = data.akad.date.replace(/,/g, '');
-
-                    document.getElementById('groom-photo').src = data.groom.photoUrl || 'https://placehold.co/300x300/e2e8f0/e2e8f0?text=Pria';
-                    document.getElementById('groom-name').innerText = data.groom.name;
-                    document.getElementById('groom-parents').innerText = `Putra dari ${data.groom.parents}`;
-                    
-                    document.getElementById('bride-photo').src = data.bride.photoUrl || 'https://placehold.co/300x300/e2e8f0/e2e8f0?text=Wanita';
-                    document.getElementById('bride-name').innerText = data.bride.name;
-                    document.getElementById('bride-parents').innerText = `Putri dari ${data.bride.parents}`;
-
-                    document.getElementById('akad-date').innerText = data.akad.date;
-                    document.getElementById('akad-time').innerText = data.akad.time;
-                    document.getElementById('akad-location').innerText = data.akad.location;
-                    document.getElementById('resepsi-date').innerText = data.resepsi.date;
-                    document.getElementById('resepsi-time').innerText = data.resepsi.time;
-                    document.getElementById('resepsi-location').innerText = data.resepsi.location;
-
-                    document.getElementById('hero').style.backgroundImage = `url('${data.display.backgroundUrl}')`;
-                    document.getElementById('splash-screen').style.backgroundImage = `url('${data.display.backgroundUrl}')`;
-
-                    const mapLocation = encodeURIComponent(data.akad.location);
-                    document.getElementById('google-map').src = `https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q=${mapLocation}`;
-
-
-                    // Load Gallery
-                    const galleryGrid = document.getElementById('gallery-grid');
-                    galleryGrid.innerHTML = '';
-                    data.gallery.forEach(url => {
-                        const imgContainer = document.createElement('div');
-                        imgContainer.className = 'reveal';
-                        imgContainer.innerHTML = `<img src="${url}" alt="Foto Galeri" class="w-full h-full object-cover rounded-lg shadow-md cursor-pointer hover:scale-105 transition-transform duration-300">`;
-                        galleryGrid.appendChild(imgContainer);
-                    });
-                    setupLightbox();
-                    startCountdown(data.akad.date);
-                }
-                 document.body.style.opacity = '1';
+                const data = docSnap.exists() ? docSnap.data() : {};
+                updateContent(data);
             }, (error) => {
                 console.error("Error listening to config:", error);
-                document.body.style.opacity = '1';
+                updateContent({}); // Load with defaults on error
             });
+        }
+        
+        function updateStyles(displayConfig) {
+            const styleEl = document.getElementById('dynamic-styles');
+            const fontLink = document.createElement('link');
+            fontLink.id = 'dynamic-font-link';
+            const existingFontLink = document.getElementById('dynamic-font-link');
+            if(existingFontLink) existingFontLink.remove();
+
+            fontLink.href = `https://fonts.googleapis.com/css2?family=${displayConfig.headingFont.replace(' ', '+')}:wght@700&family=${displayConfig.bodyFont.replace(' ', '+')}&display=swap`;
+            fontLink.rel = 'stylesheet';
+            document.head.appendChild(fontLink);
+            
+            styleEl.innerHTML = `
+                :root {
+                    --font-heading: '${displayConfig.headingFont}', serif;
+                    --font-body: '${displayConfig.bodyFont}', sans-serif;
+                    --color-bg: ${displayConfig.backgroundColor};
+                    --color-text: ${displayConfig.textColor};
+                    --color-accent: ${displayConfig.accentColor};
+                    --color-card-bg: ${getCardBgColor(displayConfig.backgroundColor)};
+                }
+                html { scroll-behavior: smooth; }
+                body { font-family: var(--font-body); background-color: var(--color-bg); color: var(--color-text); opacity: 0; transition: opacity 1s ease-in-out; padding-bottom: 80px; }
+                h1, h2, h3, .font-heading { font-family: var(--font-heading); }
+                .accent-text { color: var(--color-accent); }
+                .accent-bg { background-color: var(--color-accent); }
+                .card { background-color: var(--color-card-bg); }
+                .nav-active i, .nav-active span { color: var(--color-accent) !important; font-weight: 600; }
+                .bottom-nav a { transition: color 0.3s; }
+                .bottom-nav a:hover { color: var(--color-accent); }
+                .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.8s, transform 0.8s; transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+                .reveal.visible { opacity: 1; transform: translateY(0); }
+                 #lightbox { display: none; background-color: rgba(0,0,0,0.9); }
+                 #lightbox-img { animation: zoomInModal 0.5s; }
+                 @keyframes zoomInModal { from {transform: scale(0.8)} to {transform: scale(1)} }
+            `;
+            animationEnabled = displayConfig.animationEnabled === 'true';
+            document.body.style.opacity = '1';
+        }
+
+        function updateContent(data) {
+            const defaults = {
+                groom: { name: 'Mempelai Pria', parents: 'Orang Tua', photoUrl: 'https://placehold.co/300x300/e2e8f0/e2e8f0?text=Pria' },
+                bride: { name: 'Mempelai Wanita', parents: 'Orang Tua', photoUrl: 'https://placehold.co/300x300/e2e8f0/e2e8f0?text=Wanita' },
+                akad: { date: 'Segera Dikonfirmasi', time: 'TBA', location: 'TBA' },
+                resepsi: { date: 'Segera Dikonfirmasi', time: 'TBA', location: 'TBA' },
+                display: { backgroundUrl: 'https://images.unsplash.com/photo-1525502613928-8822292049e6?q=80&w=1887&auto=format&fit=crop', musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', accentColor: '#d4af37', backgroundColor: '#f8f4e9', textColor: '#3d3d3d', headingFont: 'Playfair Display', bodyFont: 'Poppins', animationEnabled: 'true' },
+                gallery: []
+            };
+            const config = {
+                ...defaults, ...data,
+                groom: { ...defaults.groom, ...data.groom },
+                bride: { ...defaults.bride, ...data.bride },
+                akad: { ...defaults.akad, ...data.akad },
+                resepsi: { ...defaults.resepsi, ...data.resepsi },
+                display: { ...defaults.display, ...data.display },
+            };
+            
+            updateStyles(config.display);
+
+            const groomName = config.groom.name;
+            const brideName = config.bride.name;
+            document.getElementById('splash-groom-name').innerText = groomName.split(',')[0];
+            document.getElementById('splash-bride-name').innerText = `& ${brideName.split(',')[0]}`;
+            document.getElementById('splash-date').innerText = config.akad.date;
+            document.getElementById('hero-names').innerText = `${groomName.split(',')[0]} & ${brideName.split(',')[0]}`;
+            document.getElementById('hero-date').innerText = config.akad.date.replace(/,/g, '');
+            document.getElementById('footer-names').innerText = `${groomName.split(',')[0]} & ${brideName.split(',')[0]}`;
+
+            document.getElementById('groom-photo').src = config.groom.photoUrl;
+            document.getElementById('groom-name').innerText = groomName;
+            document.getElementById('groom-parents').innerText = `Putra dari ${config.groom.parents}`;
+            
+            document.getElementById('bride-photo').src = config.bride.photoUrl;
+            document.getElementById('bride-name').innerText = brideName;
+            document.getElementById('bride-parents').innerText = `Putri dari ${config.bride.parents}`;
+
+            document.getElementById('akad-date').innerText = config.akad.date;
+            document.getElementById('akad-time').innerText = config.akad.time;
+            document.getElementById('akad-location').innerText = config.akad.location;
+            document.getElementById('resepsi-date').innerText = config.resepsi.date;
+            document.getElementById('resepsi-time').innerText = config.resepsi.time;
+            document.getElementById('resepsi-location').innerText = config.resepsi.location;
+
+            document.getElementById('hero').style.backgroundImage = `url('${config.display.backgroundUrl}')`;
+            document.getElementById('splash-screen').style.backgroundImage = `url('${config.display.backgroundUrl}')`;
+
+            const mapLocation = encodeURIComponent(config.akad.location);
+            document.getElementById('google-map').src = `https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY_IS_NOT_NEEDED_HERE&q=${mapLocation}`;
+
+            const audio = document.getElementById('background-music');
+            if (audio.src !== config.display.musicUrl) {
+                audio.src = config.display.musicUrl;
+            }
+
+            const galleryGrid = document.getElementById('gallery-grid');
+            galleryGrid.innerHTML = '';
+            (config.gallery || []).forEach(url => {
+                const imgContainer = document.createElement('div');
+                if(animationEnabled) imgContainer.className = 'reveal';
+                imgContainer.innerHTML = `<img src="${url}" alt="Foto Galeri" class="w-full h-full object-cover rounded-lg shadow-md cursor-pointer hover:scale-105 transition-transform duration-300">`;
+                galleryGrid.appendChild(imgContainer);
+            });
+            setupLightbox();
+            startCountdown(config.akad.date);
         }
         
         function getCardBgColor(bgColor) {
@@ -396,21 +428,22 @@
             }, 1000);
         });
 
-        // Countdown
         function startCountdown(dateString) {
-             if (!dateString) return;
+             if (!dateString || countdownInterval) return;
             const targetDate = new Date(`${dateString.split(', ')[1]} 09:00:00`).getTime();
-            setInterval(() => {
+            countdownInterval = setInterval(() => {
                 const now = new Date().getTime();
                 const distance = targetDate - now;
-                document.getElementById('days').innerText = Math.floor(distance / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
-                document.getElementById('hours').innerText = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
-                document.getElementById('minutes').innerText = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
-                document.getElementById('seconds').innerText = Math.floor((distance % (1000 * 60)) / 1000).toString().padStart(2, '0');
+                document.getElementById('days').innerText = Math.max(0, Math.floor(distance / (1000 * 60 * 60 * 24))).toString().padStart(2, '0');
+                document.getElementById('hours').innerText = Math.max(0, Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))).toString().padStart(2, '0');
+                document.getElementById('minutes').innerText = Math.max(0, Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))).toString().padStart(2, '0');
+                document.getElementById('seconds').innerText = Math.max(0, Math.floor((distance % (1000 * 60)) / 1000)).toString().padStart(2, '0');
+                if (distance < 0) {
+                    clearInterval(countdownInterval);
+                }
             }, 1000);
         }
 
-        // Smooth Scroll & Nav Highlight
         document.querySelectorAll('.nav-item').forEach(link => {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -418,43 +451,43 @@
             });
         });
 
-        // Guestbook Logic
         const guestbookForm = document.getElementById('guestbook-form');
         const submitBtn = document.getElementById('submit-guestbook');
         let existingGuests = new Set();
 
-        async function listenToGuestbook() {
+        function listenToGuestbook() {
+            if (!guestbookColRef) return;
             const q = query(guestbookColRef, orderBy("timestamp", "desc"));
-            const querySnapshot = await getDocs(q);
-            let hadirCount = 0;
-            const wishesContainer = document.getElementById('wishes-container');
-            wishesContainer.innerHTML = '';
-            existingGuests.clear();
+            onSnapshot(q, (snapshot) => {
+                const wishesContainer = document.getElementById('wishes-container');
+                wishesContainer.innerHTML = '';
+                existingGuests.clear();
+                
+                const docs = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                const hadirDocs = docs.filter(d => d.rsvp === 'Hadir').reverse();
 
-            const docs = querySnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
-            
-            // Recalculate attendance numbers client-side
-            const hadirDocs = docs.filter(d => d.rsvp === 'Hadir').reverse();
-
-            docs.forEach(data => {
-                existingGuests.add(data.name.trim().toLowerCase());
-                let noHadirHtml = '';
-                if (data.rsvp === 'Hadir') {
-                    const number = hadirDocs.findIndex(hd => hd.id === data.id) + 1;
-                    noHadirHtml = `<span class="accent-bg text-white text-xs font-bold px-2 py-1 rounded-full ml-2">${number}</span>`;
-                }
-                const wishEl = document.createElement('div');
-                wishEl.className = "card text-left p-4 rounded-lg shadow";
-                wishEl.innerHTML = `
-                    <div class="flex justify-between items-start">
-                       <div>
-                           <p class="font-bold">${data.name} ${noHadirHtml}</p>
-                           <p class="text-xs opacity-70">${data.address || ''}</p>
-                       </div>
-                       <p class="text-xs opacity-60">${data.timestamp.toDate().toLocaleDateString('id-ID')}</p>
-                    </div>
-                    <p class="mt-2 text-sm">${data.message}</p>`;
-                wishesContainer.appendChild(wishEl);
+                docs.forEach(data => {
+                    existingGuests.add(data.name.trim().toLowerCase());
+                    let noHadirHtml = '';
+                    if (data.rsvp === 'Hadir') {
+                        const number = hadirDocs.findIndex(hd => hd.id === data.id) + 1;
+                        noHadirHtml = `<span class="accent-bg text-white text-xs font-bold px-2 py-1 rounded-full ml-2">${number}</span>`;
+                    }
+                    const wishEl = document.createElement('div');
+                    wishEl.className = "card text-left p-4 rounded-lg shadow";
+                    wishEl.innerHTML = `
+                        <div class="flex justify-between items-start">
+                           <div>
+                               <p class="font-bold">${data.name} ${noHadirHtml}</p>
+                               <p class="text-xs opacity-70">${data.address || ''}</p>
+                           </div>
+                           <p class="text-xs opacity-60">${data.timestamp.toDate().toLocaleDateString('id-ID')}</p>
+                        </div>
+                        <p class="mt-2 text-sm">${data.message}</p>`;
+                    wishesContainer.appendChild(wishEl);
+                });
+            }, (error) => {
+                console.error("Error listening to guestbook: ", error);
             });
         }
         
@@ -475,12 +508,10 @@
             try {
                 await addDoc(guestbookColRef, { name, address, message, rsvp, timestamp: new Date() });
                 guestbookForm.reset();
-                listenToGuestbook();
             } catch (err) { console.error("Error adding document: ", err); }
             finally { submitBtn.disabled = false; submitBtn.innerText = 'Kirim Ucapan'; }
         });
 
-        // Animation on Scroll
         function setupIntersectionObserver() {
              if (!animationEnabled) {
                 document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
@@ -496,7 +527,6 @@
             document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
         }
 
-        // Lightbox
         function setupLightbox() {
             const lightbox = document.getElementById('lightbox');
             const lightboxImg = document.getElementById('lightbox-img');
@@ -522,7 +552,6 @@
             });
         }
 
-        // Music
         const musicToggle = document.getElementById('music-toggle');
         const musicIcon = document.getElementById('music-icon');
         const audio = document.getElementById('background-music');
