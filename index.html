@@ -209,7 +209,7 @@
         <footer class="py-12 text-center text-sm">
             <p>Terima kasih atas doa restu Anda.</p>
             <p id="footer-names" class="font-heading text-2xl mt-2">Erika & Agus</p>
-            <p class="mt-4 text-xs opacity-70">&copy; 2025. Five <i class="fa fa-smile"></i>.</p>
+            <p class="mt-4 text-xs opacity-70">&copy; 2025. Dibuat dengan <i class="fas fa-heart"></i>.</p>
         </footer>
 
     </main>
@@ -253,6 +253,15 @@
         let animationEnabled = true;
         let countdownInterval;
 
+        const defaults = {
+            groom: { name: 'Mempelai Pria', parents: 'Orang Tua', photoUrl: 'https://placehold.co/300x300/e2e8f0/e2e8f0?text=Pria' },
+            bride: { name: 'Mempelai Wanita', parents: 'Orang Tua', photoUrl: 'https://placehold.co/300x300/e2e8f0/e2e8f0?text=Wanita' },
+            akad: { date: 'Segera Dikonfirmasi', time: 'TBA', location: 'TBA' },
+            resepsi: { date: 'Segera Dikonfirmasi', time: 'TBA', location: 'TBA' },
+            display: { backgroundUrl: 'https://images.unsplash.com/photo-1525502613928-8822292049e6?q=80&w=1887&auto=format&fit=crop', musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', accentColor: '#d4af37', backgroundColor: '#f8f4e9', textColor: '#3d3d3d', headingFont: 'Playfair Display', bodyFont: 'Poppins', animationEnabled: 'true' },
+            gallery: []
+        };
+
         if (firebaseConfig) {
             try {
                 const app = initializeApp(firebaseConfig);
@@ -270,12 +279,11 @@
                 })();
             } catch (error) { 
                 console.error("Firebase init failed:", error); 
-                document.body.style.opacity = '1';
+                updateContent(defaults);
             }
         } else {
             console.warn("Firebase config not found. Using default content.");
-            updateContent({}); // Load with default content
-            document.body.style.opacity = '1';
+            updateContent(defaults); 
         }
 
         const configDocRef = db ? doc(db, `artifacts/${appId}/public/data/invitation/config`) : null;
@@ -333,14 +341,6 @@
         }
 
         function updateContent(data) {
-            const defaults = {
-                groom: { name: 'Mempelai Pria', parents: 'Orang Tua', photoUrl: 'https://placehold.co/300x300/e2e8f0/e2e8f0?text=Pria' },
-                bride: { name: 'Mempelai Wanita', parents: 'Orang Tua', photoUrl: 'https://placehold.co/300x300/e2e8f0/e2e8f0?text=Wanita' },
-                akad: { date: 'Segera Dikonfirmasi', time: 'TBA', location: 'TBA' },
-                resepsi: { date: 'Segera Dikonfirmasi', time: 'TBA', location: 'TBA' },
-                display: { backgroundUrl: 'https://images.unsplash.com/photo-1525502613928-8822292049e6?q=80&w=1887&auto=format&fit=crop', musicUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', accentColor: '#d4af37', backgroundColor: '#f8f4e9', textColor: '#3d3d3d', headingFont: 'Playfair Display', bodyFont: 'Poppins', animationEnabled: 'true' },
-                gallery: []
-            };
             const config = {
                 ...defaults, ...data,
                 groom: { ...defaults.groom, ...data.groom },
@@ -354,12 +354,12 @@
 
             const groomName = config.groom.name;
             const brideName = config.bride.name;
-            document.getElementById('splash-groom-name').innerText = groomName.split(',')[0];
-            document.getElementById('splash-bride-name').innerText = `& ${brideName.split(',')[0]}`;
+            document.getElementById('splash-groom-name').innerText = (groomName || '').split(',')[0];
+            document.getElementById('splash-bride-name').innerText = `& ${(brideName || '').split(',')[0]}`;
             document.getElementById('splash-date').innerText = config.akad.date;
-            document.getElementById('hero-names').innerText = `${groomName.split(',')[0]} & ${brideName.split(',')[0]}`;
-            document.getElementById('hero-date').innerText = config.akad.date.replace(/,/g, '');
-            document.getElementById('footer-names').innerText = `${groomName.split(',')[0]} & ${brideName.split(',')[0]}`;
+            document.getElementById('hero-names').innerText = `${(groomName || '').split(',')[0]} & ${(brideName || '').split(',')[0]}`;
+            document.getElementById('hero-date').innerText = (config.akad.date || '').replace(/,/g, '');
+            document.getElementById('footer-names').innerText = `${(groomName || '').split(',')[0]} & ${(brideName || '').split(',')[0]}`;
 
             document.getElementById('groom-photo').src = config.groom.photoUrl;
             document.getElementById('groom-name').innerText = groomName;
@@ -429,7 +429,7 @@
         });
 
         function startCountdown(dateString) {
-             if (!dateString || countdownInterval) return;
+             if (!dateString || countdownInterval || !dateString.includes(',')) return;
             const targetDate = new Date(`${dateString.split(', ')[1]} 09:00:00`).getTime();
             countdownInterval = setInterval(() => {
                 const now = new Date().getTime();
