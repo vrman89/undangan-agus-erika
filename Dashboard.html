@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Konten Undangan - Firebase</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Playfair+Display:wght@700&family=Lato&family=Merriweather&family=Montserrat&family=Cormorant+Garamond:wght@600&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f1f5f9;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+         .btn-primary:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .input-field, .select-field {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .input-field:focus, .select-field:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgb(59 130 246 / 0.3);
+        }
+        .color-picker-wrapper {
+            position: relative;
+            width: 44px;
+            height: 44px;
+        }
+        .color-picker {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .color-preview {
+            width: 100%;
+            height: 100%;
+            border-radius: 0.5rem;
+            border: 2px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body class="bg-slate-100">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-slate-800">Dashboard Konten Undangan</h1>
+            <p class="text-slate-600 mt-1">Ubah seluruh konten undangan pernikahan Anda di sini dengan mudah.</p>
+        </header>
+
+        <main id="dashboard-form">
+            <!-- Status Display -->
+            <div id="status" class="mb-6 p-4 rounded-lg text-center font-medium hidden"></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Groom Section -->
+                <div class="card p-6">
+                    <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Mempelai Pria</h2>
+                    <div class="space-y-4">
+                        <div><label for="groomName" class="block text-sm font-medium text-slate-600 mb-1">Nama Lengkap</label><input type="text" id="groomName" data-key="groom.name" class="input-field"></div>
+                        <div><label for="groomParents" class="block text-sm font-medium text-slate-600 mb-1">Nama Orang Tua</label><input type="text" id="groomParents" data-key="groom.parents" class="input-field"></div>
+                        <div><label for="groomPhoto" class="block text-sm font-medium text-slate-600 mb-1">URL Foto Mempelai Pria</label><input type="text" id="groomPhoto" data-key="groom.photoUrl" class="input-field"></div>
+                    </div>
+                </div>
+
+                <!-- Bride Section -->
+                <div class="card p-6">
+                    <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Mempelai Wanita</h2>
+                    <div class="space-y-4">
+                        <div><label for="brideName" class="block text-sm font-medium text-slate-600 mb-1">Nama Lengkap</label><input type="text" id="brideName" data-key="bride.name" class="input-field"></div>
+                        <div><label for="brideParents" class="block text-sm font-medium text-slate-600 mb-1">Nama Orang Tua</label><input type="text" id="brideParents" data-key="bride.parents" class="input-field"></div>
+                         <div><label for="bridePhoto" class="block text-sm font-medium text-slate-600 mb-1">URL Foto Mempelai Wanita</label><input type="text" id="bridePhoto" data-key="bride.photoUrl" class="input-field"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Section -->
+            <div class="card p-6 mt-6">
+                <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Detail Acara</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-slate-600 mb-3">Akad Nikah</h3>
+                        <div class="space-y-4">
+                            <div><label for="akadDate" class="block text-sm font-medium text-slate-600 mb-1">Tanggal</label><input type="text" id="akadDate" data-key="akad.date" class="input-field"></div>
+                            <div><label for="akadTime" class="block text-sm font-medium text-slate-600 mb-1">Waktu</label><input type="text" id="akadTime" data-key="akad.time" class="input-field"></div>
+                            <div><label for="akadLocation" class="block text-sm font-medium text-slate-600 mb-1">Lokasi</label><textarea id="akadLocation" data-key="akad.location" class="input-field" rows="3"></textarea></div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-medium text-slate-600 mb-3">Resepsi</h3>
+                         <div class="space-y-4">
+                            <div><label for="resepsiDate" class="block text-sm font-medium text-slate-600 mb-1">Tanggal</label><input type="text" id="resepsiDate" data-key="resepsi.date" class="input-field"></div>
+                            <div><label for="resepsiTime" class="block text-sm font-medium text-slate-600 mb-1">Waktu</label><input type="text" id="resepsiTime" data-key="resepsi.time" class="input-field"></div>
+                            <div><label for="resepsiLocation" class="block text-sm font-medium text-slate-600 mb-1">Lokasi</label><textarea id="resepsiLocation" data-key="resepsi.location" class="input-field" rows="3"></textarea></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Display Settings Section -->
+            <div class="card p-6 mt-6">
+                <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Pengaturan Tampilan</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="space-y-4">
+                        <h3 class="font-medium text-slate-600">Umum</h3>
+                        <div><label for="backgroundUrl" class="block text-sm font-medium text-slate-600 mb-1">URL Latar Belakang Utama</label><input type="text" id="backgroundUrl" data-key="display.backgroundUrl" class="input-field"></div>
+                        <div><label for="animation" class="block text-sm font-medium text-slate-600 mb-1">Animasi Halaman</label><select id="animation" data-key="display.animationEnabled" class="select-field"><option value="true">Aktif</option><option value="false">Nonaktif</option></select></div>
+                    </div>
+                    <div class="space-y-4">
+                        <h3 class="font-medium text-slate-600">Skema Warna</h3>
+                        <div class="flex items-center justify-between"><label class="text-sm font-medium text-slate-600">Warna Aksen</label><div class="color-picker-wrapper"><div id="accentColorPreview" class="color-preview"></div><input type="color" id="accentColor" data-key="display.accentColor" class="color-picker"></div></div>
+                        <div class="flex items-center justify-between"><label class="text-sm font-medium text-slate-600">Warna Latar</label><div class="color-picker-wrapper"><div id="bgColorPreview" class="color-preview"></div><input type="color" id="bgColor" data-key="display.backgroundColor" class="color-picker"></div></div>
+                         <div class="flex items-center justify-between"><label class="text-sm font-medium text-slate-600">Warna Teks</label><div class="color-picker-wrapper"><div id="textColorPreview" class="color-preview"></div><input type="color" id="textColor" data-key="display.textColor" class="color-picker"></div></div>
+                    </div>
+                    <div class="space-y-4">
+                         <h3 class="font-medium text-slate-600">Tipografi</h3>
+                        <div><label for="headingFont" class="block text-sm font-medium text-slate-600 mb-1">Font Judul</label><select id="headingFont" data-key="display.headingFont" class="select-field"><option value="Playfair Display">Playfair Display</option><option value="Cormorant Garamond">Cormorant Garamond</option><option value="Merriweather">Merriweather</option></select></div>
+                         <div><label for="bodyFont" class="block text-sm font-medium text-slate-600 mb-1">Font Teks</label><select id="bodyFont" data-key="display.bodyFont" class="select-field"><option value="Poppins">Poppins</option><option value="Lato">Lato</option><option value="Montserrat">Montserrat</option></select></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gallery Section -->
+            <div class="card p-6 mt-6">
+                <h2 class="text-xl font-semibold text-slate-700 mb-4 border-b pb-2">Galeri Foto</h2>
+                <div id="gallery-inputs" class="space-y-3"></div>
+                <button id="add-gallery-item" class="mt-4 text-sm font-medium text-blue-600 hover:text-blue-800"><i class="fas fa-plus mr-1"></i> Tambah Foto</button>
+            </div>
+
+            <div class="mt-8 text-right">
+                <button id="save-button" class="btn-primary font-bold py-3 px-8 rounded-lg shadow-lg"><i class="fas fa-save mr-2"></i> Simpan Perubahan</button>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Configuration ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-wedding-app';
+        let firebaseConfig = null;
+        try {
+            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        } catch (e) {
+            console.error("Firebase config error:", e);
+        }
+        
+        let db, auth;
+        const statusEl = document.getElementById('status');
+        const saveButton = document.getElementById('save-button');
+
+        if (!firebaseConfig) {
+            showStatus('Konfigurasi Firebase tidak ditemukan. Dashboard tidak dapat berfungsi.', 'error');
+            saveButton.disabled = true;
+        } else {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                (async () => {
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                        console.log("Authenticated successfully!");
+                        loadData();
+                    } catch (error) {
+                        showStatus(`Gagal melakukan otentikasi: ${error.message}`, 'error');
+                        saveButton.disabled = true;
+                    }
+                })();
+
+            } catch (error) {
+                showStatus(`Gagal inisialisasi Firebase: ${error.message}`, 'error');
+                 saveButton.disabled = true;
+            }
+        }
+        
+        const invitationDocRef = doc(db, `artifacts/${appId}/public/data/invitation/config`);
+
+        let invitationData = {
+            groom: { name: '', parents: '', photoUrl: '' },
+            bride: { name: '', parents: '', photoUrl: '' },
+            akad: { date: '', time: '', location: '' },
+            resepsi: { date: '', time: '', location: '' },
+            display: { backgroundUrl: '', accentColor: '#d4af37', backgroundColor: '#f8f4e9', textColor: '#3d3d3d', headingFont: 'Playfair Display', bodyFont: 'Poppins', animationEnabled: 'true' },
+            gallery: ['']
+        };
+
+        function showStatus(message, type = 'success') {
+            statusEl.textContent = message;
+            statusEl.className = 'mb-6 p-4 rounded-lg text-center font-medium';
+            statusEl.classList.add(type === 'success' ? 'bg-green-100' : 'bg-red-100', type === 'success' ? 'text-green-800' : 'text-red-800');
+            setTimeout(() => statusEl.classList.add('hidden'), 5000);
+        }
+        
+        // --- Data Handling ---
+        async function loadData() {
+            try {
+                showStatus('Memuat data...', 'loading');
+                const docSnap = await getDoc(invitationDocRef);
+                if (docSnap.exists()) {
+                    const fetchedData = docSnap.data();
+                    invitationData = { ...invitationData, ...fetchedData,
+                        groom: { ...invitationData.groom, ...fetchedData.groom },
+                        bride: { ...invitationData.bride, ...fetchedData.bride },
+                        akad: { ...invitationData.akad, ...fetchedData.akad },
+                        resepsi: { ...invitationData.resepsi, ...fetchedData.resepsi },
+                        display: { ...invitationData.display, ...fetchedData.display },
+                    };
+                }
+                populateForm();
+                statusEl.classList.add('hidden');
+            } catch (error) {
+                showStatus(`Gagal memuat data: ${error.message}`, 'error');
+            }
+        }
+
+        async function saveData() {
+            try {
+                saveButton.disabled = true;
+                saveButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...';
+                
+                document.querySelectorAll('.input-field, textarea, .select-field, .color-picker').forEach(el => {
+                    const keys = el.dataset.key.split('.');
+                    if (keys.length === 2) {
+                        if (!invitationData[keys[0]]) invitationData[keys[0]] = {};
+                        invitationData[keys[0]][keys[1]] = el.value;
+                    }
+                });
+
+                invitationData.gallery = Array.from(document.querySelectorAll('.gallery-url-input'))
+                    .map(input => input.value.trim()).filter(url => url !== '');
+
+                await setDoc(invitationDocRef, invitationData, { merge: true });
+                showStatus('Perubahan berhasil disimpan!', 'success');
+
+            } catch (error) {
+                showStatus(`Gagal menyimpan data: ${error.message}`, 'error');
+            } finally {
+                 saveButton.disabled = false;
+                 saveButton.innerHTML = '<i class="fas fa-save mr-2"></i> Simpan Perubahan';
+            }
+        }
+        
+        saveButton.addEventListener('click', saveData);
+
+        function populateForm() {
+            document.querySelectorAll('.input-field, textarea, .select-field, .color-picker').forEach(el => {
+                const keys = el.dataset.key.split('.');
+                 if (keys.length === 2 && invitationData[keys[0]]?.[keys[1]] !== undefined) {
+                     el.value = invitationData[keys[0]][keys[1]];
+                     if (el.type === 'color') {
+                        document.getElementById(`${el.id}Preview`).style.backgroundColor = el.value;
+                     }
+                 }
+            });
+            renderGalleryInputs();
+        }
+
+        function setupColorPickers() {
+            document.querySelectorAll('.color-picker').forEach(picker => {
+                picker.addEventListener('input', (e) => {
+                    document.getElementById(`${e.target.id}Preview`).style.backgroundColor = e.target.value;
+                });
+            });
+        }
+
+        function renderGalleryInputs() {
+            const container = document.getElementById('gallery-inputs');
+            container.innerHTML = '';
+            let galleryUrls = invitationData.gallery && invitationData.gallery.length > 0 ? invitationData.gallery : [''];
+            galleryUrls.forEach((url, index) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-2';
+                div.innerHTML = `
+                    <input type="text" data-key="gallery.${index}" class="input-field gallery-url-input flex-grow" value="${url}" placeholder="https://example.com/foto.jpg">
+                    <button class="remove-gallery-item text-red-500 hover:text-red-700 p-2" data-index="${index}"><i class="fas fa-trash-alt"></i></button>`;
+                container.appendChild(div);
+            });
+            document.querySelectorAll('.remove-gallery-item').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const indexToRemove = parseInt(e.currentTarget.dataset.index, 10);
+                    invitationData.gallery.splice(indexToRemove, 1);
+                    renderGalleryInputs();
+                });
+            });
+        }
+        
+        document.getElementById('add-gallery-item').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!invitationData.gallery) invitationData.gallery = [];
+            invitationData.gallery.push('');
+            renderGalleryInputs();
+        });
+        
+        setupColorPickers();
+    </script>
+</body>
+</html>
